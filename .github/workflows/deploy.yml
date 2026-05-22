@@ -32,7 +32,10 @@ jobs:
             cargo-${{ runner.os }}-
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang lld libssl-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y clang lld mold libssl-dev pkg-config
+
+      - name: Ensure Rust components
+        run: rustup component add rustfmt clippy
 
       - name: Check formatting
         run: cargo fmt -- --check
