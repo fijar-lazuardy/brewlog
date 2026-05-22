@@ -43,11 +43,16 @@ RUN curl -sL "https://github.com/canonical/chisel/releases/download/v1.4.1/chise
 RUN mkdir /rootfs && chisel cut --root /rootfs \
     base-files_base \
     base-files_release-info \
+    base-passwd_data \
     ca-certificates_data \
     libgcc-s1_libs \
     libc6_libs \
     libssl3t64_libs \
     openssl_bins
+
+RUN useradd --root /rootfs -u 1000 -U -M -s /bin/false brewlog \
+    && mkdir -p /rootfs/home/brewlog /rootfs/data \
+    && chown 1000:1000 /rootfs/home/brewlog /rootfs/data
 
 # ---------------------------------------------------------------------------
 # Runtime — scratch with chisel rootfs
@@ -55,5 +60,5 @@ RUN mkdir /rootfs && chisel cut --root /rootfs \
 FROM scratch
 COPY --from=chisel /rootfs /
 COPY --from=builder /out/brewlog /usr/local/bin/brewlog
-USER 65534:65534
+USER 1000:1000
 ENTRYPOINT ["brewlog", "serve", "--database-url", "sqlite:///data/brewlog.db"]
