@@ -1,8 +1,6 @@
 # Build artifacts
 target/
 reviews/
-result*
-.direnv/
 
 # SQLite database files
 *.db

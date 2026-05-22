@@ -9,6 +9,7 @@ prek = "latest"
 shellcheck = "latest"
 flyctl = "latest"
 "aqua:mvdan/sh" = "latest"
+"npm:oxfmt" = "latest"
 
 [env]
 SQLX_OFFLINE = "false"

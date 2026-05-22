@@ -11,7 +11,7 @@ prek run -av                      # All lints, tests, formatters
 cargo build                       # Build
 cargo test                        # Tests
 cargo clippy --allow-dirty --fix  # Lint + auto-fix
-nix fmt                           # Format
+mise run fmt                      # Format
 sqlx migrate add <name>           # New migration → migrations/NNNN_<name>.sql
 ```
 
