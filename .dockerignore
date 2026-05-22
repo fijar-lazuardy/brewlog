@@ -1,0 +1,24 @@
+# Git and tooling
+.git/
+.claude/
+.github/
+
+# Local state
+.env
+docker.env
+brewlog.db*
+backup.json
+reviews/
+
+# Build artifacts (already cached via Docker layers)
+target/
+
+# Not needed in the container
+scripts/
+tests/
+CLAUDE.md
+LICENSE
+README.md
+prek.toml
+.mise.toml
+.cargo/
