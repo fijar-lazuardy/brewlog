@@ -8,8 +8,7 @@ prek = "latest"
 "github:watchexec/cargo-watch" = "latest"
 shellcheck = "latest"
 flyctl = "latest"
-"aqua:numtide/treefmt" = "latest"
-"npm:oxfmt" = "latest"
+"aqua:mvdan/sh" = "latest"
 
 [env]
 SQLX_OFFLINE = "false"
@@ -19,12 +18,10 @@ install-deps = "sudo apt-get update && sudo apt-get install -y --no-install-reco
 
 install-py-deps = "uv tool install djlint"
 
-fmt = { depends = ["fmt:rs", "fmt:sh", "fmt:templates"] }
+fmt = { depends = ["fmt:rs", "fmt:sh", "fmt:assets"] }
 "fmt:rs" = "cargo fmt"
-"fmt:sh" = "treefmt --filter shfmt"
-"fmt:templates" = { depends = ["fmt:html", "fmt:assets"] }
-"fmt:html" = "uvx djlint templates/ --reformat"
-"fmt:assets" = "treefmt --filter oxfmt"
+"fmt:sh" = "shfmt -i 2 -s -w $(find . -name '*.sh' -not -path './target/*')"
+"fmt:assets" = "oxfmt --write $(find . \\( -name '*.css' -o -name '*.json' -o -name '*.yaml' -o -name '*.yml' -o -name '*.md' \\) -not -path './target/*' -not -path './.git/*')"
 
 lint = { depends = ["lint:rs", "lint:sh"] }
 "lint:rs" = "cargo clippy -- -D warnings"

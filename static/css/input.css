@@ -236,9 +236,7 @@ input.input-field[type="number"] {
 
 @media (max-width: 767px) {
   :root {
-    --fixed-nav-h: calc(
-      max(1rem, env(safe-area-inset-top, 0px) * 0.9) + 3.25rem
-    );
+    --fixed-nav-h: calc(max(1rem, env(safe-area-inset-top, 0px) * 0.9) + 3.25rem);
   }
 
   .nav-bar {
@@ -557,9 +555,7 @@ input.input-field[type="number"] {
 /* ── Data page ─────────────────────────────────────────────────── */
 
 /* Hide duplicate search inside data page - search is in the tab bar */
-.data-page-content
-  section:has(.responsive-table)
-  > div:first-child:has(input[type="search"]) {
+.data-page-content section:has(.responsive-table) > div:first-child:has(input[type="search"]) {
   display: none;
 }
 

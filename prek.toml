@@ -14,11 +14,21 @@ hooks = [
 repo = "local"
 hooks = [
     {
-        id = "fmt-check",
-        name = "fmt-check",
-        entry = "treefmt --fail-on-change --no-cache",
+        id = "fmt-rs",
+        name = "fmt-rs",
+        entry = "cargo fmt -- --check",
         language = "system",
+        files = "\\.rs$",
         pass_filenames = false,
+        fail_fast = true,
+        stages = ["pre-commit"],
+    },
+    {
+        id = "fmt-sh",
+        name = "fmt-sh",
+        entry = "shfmt -i 2 -d",
+        language = "system",
+        types = ["shell"],
         fail_fast = true,
         stages = ["pre-commit"],
     },
