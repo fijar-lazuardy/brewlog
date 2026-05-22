@@ -1,0 +1,41 @@
+[tools]
+rust = { version = "1.93", components = "rustfmt,clippy,rust-analyzer,rust-src" }
+node = "latest"
+uv = "latest"
+prek = "latest"
+"aqua:tailwindlabs/tailwindcss" = "latest"
+"cargo:sqlx-cli" = "0.9.0-alpha.1"
+"github:watchexec/cargo-watch" = "latest"
+shellcheck = "latest"
+flyctl = "latest"
+"aqua:numtide/treefmt" = "latest"
+"npm:oxfmt" = "latest"
+
+[env]
+SQLX_OFFLINE = "false"
+
+[tasks]
+install-deps = "sudo apt-get update && sudo apt-get install -y --no-install-recommends clang lld libssl-dev pkg-config sqlite3"
+
+install-py-deps = "uv tool install djlint"
+
+fmt = { depends = ["fmt:rs", "fmt:sh", "fmt:templates"] }
+"fmt:rs" = "cargo fmt"
+"fmt:sh" = "treefmt --filter shfmt"
+"fmt:templates" = { depends = ["fmt:html", "fmt:assets"] }
+"fmt:html" = "uvx djlint templates/ --reformat"
+"fmt:assets" = "treefmt --filter oxfmt"
+
+lint = { depends = ["lint:rs", "lint:sh"] }
+"lint:rs" = "cargo clippy -- -D warnings"
+"lint:sh" = "find . -name '*.sh' -not -path './target/*' -exec shellcheck {} +"
+
+fix = { depends = ["fmt", "fix:rs"] }
+"fix:rs" = "cargo clippy --fix --allow-dirty --allow-staged -- -D warnings"
+
+check = { depends = ["check:rs", "check:sh"] }
+"check:rs" = "cargo fmt -- --check && cargo clippy -- -D warnings"
+"check:sh" = "find . -name '*.sh' -not -path './target/*' -exec shellcheck {} +"
+
+test = "cargo test"
+"test:e2e" = "cargo test --features e2e --test e2e"

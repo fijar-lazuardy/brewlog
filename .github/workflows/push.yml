@@ -15,14 +15,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install nix
-        uses: DeterminateSystems/nix-installer-action@main
-
-      - name: Setup Nix cache
-        uses: nix-community/cache-nix-action@main
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
+      - name: Install mise
+        uses: jdx/mise-action@v2
 
       - name: Cache Cargo artifacts
         uses: actions/cache@v5
@@ -37,14 +31,17 @@ jobs:
             cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-
             cargo-${{ runner.os }}-
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang lld libssl-dev pkg-config
+
       - name: Check formatting
-        run: nix develop -c cargo fmt --check
+        run: cargo fmt -- --check
 
       - name: Clippy
-        run: nix develop -c cargo clippy
+        run: cargo clippy -- -D warnings
 
       - name: Run tests
-        run: nix develop -c cargo test -- --show-output
+        run: cargo test -- --show-output
 
   e2e:
     name: E2E Tests
@@ -53,14 +50,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install nix
-        uses: DeterminateSystems/nix-installer-action@main
-
-      - name: Setup Nix cache
-        uses: nix-community/cache-nix-action@main
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
+      - name: Install mise
+        uses: jdx/mise-action@v2
 
       - name: Cache Cargo artifacts
         uses: actions/cache@v5
@@ -75,5 +66,11 @@ jobs:
             cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-
             cargo-${{ runner.os }}-
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang lld libssl-dev pkg-config
+
+      - name: Install Chrome for E2E
+        uses: browser-actions/setup-chrome@v1
+
       - name: Run E2E tests
-        run: nix develop -c cargo test --features e2e --test e2e -- --show-output
+        run: cargo test --features e2e --test e2e -- --show-output

@@ -1,0 +1,52 @@
+#:schema https://www.schemastore.org/prek.json
+
+# All hooks run at pre-commit stage for immediate feedback.
+
+[[repos]]
+repo = "builtin"
+hooks = [
+    { id = "trailing-whitespace" },
+    { id = "end-of-file-fixer" },
+    { id = "check-added-large-files" },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+    {
+        id = "fmt-check",
+        name = "fmt-check",
+        entry = "treefmt --fail-on-change --no-cache",
+        language = "system",
+        pass_filenames = false,
+        fail_fast = true,
+        stages = ["pre-commit"],
+    },
+    {
+        id = "clippy",
+        name = "clippy",
+        entry = "cargo clippy -- -D warnings",
+        language = "system",
+        files = "\\.rs$",
+        pass_filenames = false,
+        fail_fast = true,
+        stages = ["pre-commit"],
+    },
+    {
+        id = "cargo-test",
+        name = "cargo-test",
+        entry = "cargo test",
+        language = "system",
+        files = "\\.(rs|toml)$",
+        pass_filenames = false,
+        stages = ["pre-commit"],
+    },
+    {
+        id = "shellcheck",
+        name = "shellcheck",
+        entry = "shellcheck",
+        language = "system",
+        types = ["shell"],
+        stages = ["pre-commit"],
+    },
+]

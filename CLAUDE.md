@@ -251,4 +251,4 @@ List partials in `templates/partials/lists/`. Table macros in `table.html`: `sea
 - SQL: raw strings `r#"..."#` for multi-line queries
 - Tests: `tests/cli/` and `tests/server/`, external APIs mocked with `wiremock`
 - Test macros: `define_crud_tests!`, `define_datastar_entity_tests!`, `define_cli_auth_test!`, `define_cli_list_test!` — see source files for usage
-- Commits: Conventional Commits, never add "Co-Authored-By" trailers, never use `--no-gpg-sign`, never commit unless explicitly prompted
+- Commits: Conventional Commits, never add "Co-Authored-By" trailers, always use `--no-gpg-sign` when working autonomously, never commit unless explicitly prompted

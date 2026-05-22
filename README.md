@@ -123,13 +123,40 @@ directory is loaded automatically via [dotenvy](https://crates.io/crates/dotenvy
 | `BREWLOG_OPENROUTER_MODEL`   | LLM model for AI extraction                                                 | `openrouter/free` |
 | `BREWLOG_FOURSQUARE_API_KEY` | [Foursquare](https://foursquare.com/) Places API key for nearby cafe search | **required**      |
 
+## Development Setup
+
+Install [mise](https://mise.jdx.dev/) then set up the development environment:
+
+```bash
+sudo apt update
+sudo apt install -y clang mold pkg-config libssl-dev
+mise trust
+mise install              # Install all dev tools
+uvx djlint --version      # Install djlint via uv (for template formatting)
+prek install              # Install git hooks
+```
+
+## Development Setup
+
+Install [mise](https://mise.jdx.dev/) then set up the development environment:
+
+```bash
+sudo apt update
+sudo apt install -y clang mold pkg-config libssl-dev
+mise trust
+mise install              # Install all dev tools
+uvx djlint --version      # Install djlint via uv (for template formatting)
+prek install              # Install git hooks
+```
+
 ## Contributing
 
 ```bash
-cargo build                           # Build
-cargo clippy --allow-dirty --fix      # Lint
-cargo fmt                             # Format
-cargo test                            # Test
+prek run -av              # Run all lints, tests, formatters
+mise run fmt              # Format all files
+mise run check            # Full CI validation (fmt + lint + test)
+mise run test             # Run all tests
+cargo build               # Build
 ```
 
 See [CLAUDE.md](CLAUDE.md) for architecture, code patterns, and development conventions.
