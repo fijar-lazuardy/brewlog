@@ -32,7 +32,10 @@ jobs:
             cargo-${{ runner.os }}-
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang lld libssl-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y clang lld mold libssl-dev pkg-config
+
+      - name: Ensure Rust components
+        run: rustup component add rustfmt clippy
 
       - name: Check formatting
         run: cargo fmt -- --check
@@ -67,7 +70,7 @@ jobs:
             cargo-${{ runner.os }}-
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang lld libssl-dev pkg-config libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 libnss3 libxshmfence1
+        run: sudo apt-get update && sudo apt-get install -y clang lld mold libssl-dev pkg-config libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 libnss3 libxshmfence1
 
       - name: Install Chrome for Testing
         run: mise run install-e2e
