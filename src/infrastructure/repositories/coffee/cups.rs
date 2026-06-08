@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{QueryBuilder, query, query_as};
+use sqlx::{AssertSqlSafe, QueryBuilder, query, query_as};
 
 use crate::domain::RepositoryError;
 use crate::domain::cups::{Cup, CupFilter, CupSortKey, CupWithDetails, NewCup, UpdateCup};
@@ -113,7 +113,7 @@ impl CupRepository for SqlCupRepository {
     async fn get_with_details(&self, id: CupId) -> Result<CupWithDetails, RepositoryError> {
         let query = format!("{BASE_SELECT} WHERE c.id = ?");
 
-        let record = query_as::<_, CupWithDetailsRecord>(&query)
+        let record = query_as::<_, CupWithDetailsRecord>(AssertSqlSafe(query))
             .bind(id.into_inner())
             .fetch_optional(&self.pool)
             .await

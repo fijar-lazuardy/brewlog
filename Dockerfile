@@ -4,16 +4,23 @@
 # Uses chisel to create a minimal Ubuntu rootfs for the runtime image.
 
 # ---------------------------------------------------------------------------
-# Builder — Ubuntu with Rust toolchain pre-installed
+# Builder — Ubuntu with Rust toolchain installed
 # ---------------------------------------------------------------------------
-FROM ubuntu/rust:1.93-26.04_edge AS builder
+FROM ubuntu:26.04 AS builder
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:${PATH}
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    build-essential \
     pkg-config \
     libssl-dev \
     mold \
     binutils \
     curl \
     && rm -rf /var/lib/apt/lists/*
+RUN curl -sSf https://sh.rustup.rs \
+    | sh -s -- -y --profile minimal --default-toolchain 1.94.1
 
 # Install tailwindcss standalone (needed by build.rs)
 RUN mkdir -p /usr/local/bin \

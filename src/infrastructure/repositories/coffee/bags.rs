@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
-use sqlx::{QueryBuilder, query_as};
+use sqlx::{AssertSqlSafe, QueryBuilder, query_as};
 
 use crate::domain::RepositoryError;
 use crate::domain::bags::{Bag, BagFilter, BagSortKey, BagWithRoast, NewBag, UpdateBag};
@@ -119,7 +119,7 @@ impl BagRepository for SqlBagRepository {
     async fn get_with_roast(&self, id: BagId) -> Result<BagWithRoast, RepositoryError> {
         let query = format!("{BASE_SELECT} WHERE b.id = ?");
 
-        let record = query_as::<_, BagWithRoastRecord>(&query)
+        let record = query_as::<_, BagWithRoastRecord>(AssertSqlSafe(query))
             .bind(id.into_inner())
             .fetch_optional(&self.pool)
             .await

@@ -1,4 +1,4 @@
-use sqlx::{FromRow, QueryBuilder, query_scalar};
+use sqlx::{AssertSqlSafe, FromRow, QueryBuilder, query_scalar};
 
 use crate::domain::RepositoryError;
 use crate::domain::listing::{ListRequest, Page, PageSize, SortKey};
@@ -102,7 +102,7 @@ where
         qb.push(" OFFSET ");
         qb.push_bind(offset);
     }
-    qb.build_query_as()
+    qb.build_query_as::<R>()
         .fetch_all(pool)
         .await
         .map_err(|err| RepositoryError::unexpected(err.to_string()))
@@ -117,13 +117,13 @@ async fn fetch_count(
         let mut qb = QueryBuilder::new(count_query);
         append_search_condition(&mut qb, count_query, sf);
         let row: (i64,) = qb
-            .build_query_as()
+            .build_query_as::<(i64,)>()
             .fetch_one(pool)
             .await
             .map_err(|err| RepositoryError::unexpected(err.to_string()))?;
         Ok(row.0)
     } else {
-        query_scalar(count_query)
+        query_scalar(AssertSqlSafe(count_query))
             .fetch_one(pool)
             .await
             .map_err(|err| RepositoryError::unexpected(err.to_string()))
@@ -131,7 +131,7 @@ async fn fetch_count(
 }
 
 fn append_search_condition(
-    qb: &mut QueryBuilder<'_, DatabaseDriver>,
+    qb: &mut QueryBuilder<DatabaseDriver>,
     base_sql: &str,
     search: &SearchFilter,
 ) {

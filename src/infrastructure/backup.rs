@@ -4,6 +4,7 @@ use anyhow::{Context, bail};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
+use sqlx::AssertSqlSafe;
 
 use crate::domain::bags::Bag;
 use crate::domain::brews::{Brew, QuickNote};
@@ -175,7 +176,7 @@ impl BackupService {
 
         for table in tables {
             let query = format!("DELETE FROM {table}");
-            sqlx::query(&query)
+            sqlx::query(AssertSqlSafe(query))
                 .execute(&mut *tx)
                 .await
                 .with_context(|| format!("failed to delete from {table}"))?;
@@ -316,7 +317,7 @@ impl BackupService {
 
         for table in tables {
             let query = format!("SELECT COUNT(*) as count FROM {table}");
-            let row: (i64,) = sqlx::query_as(&query)
+            let row: (i64,) = sqlx::query_as(AssertSqlSafe(query))
                 .fetch_one(&self.pool)
                 .await
                 .with_context(|| format!("failed to check table {table}"))?;

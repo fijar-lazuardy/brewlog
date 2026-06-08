@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{QueryBuilder, query_as};
+use sqlx::{AssertSqlSafe, QueryBuilder, query_as};
 
 use crate::domain::RepositoryError;
 use crate::domain::brews::{
@@ -189,7 +189,7 @@ impl BrewRepository for SqlBrewRepository {
     async fn get_with_details(&self, id: BrewId) -> Result<BrewWithDetails, RepositoryError> {
         let query = format!("{BASE_SELECT} WHERE br.id = ?");
 
-        let record = query_as::<_, BrewWithDetailsRecord>(&query)
+        let record = query_as::<_, BrewWithDetailsRecord>(AssertSqlSafe(query))
             .bind(id.into_inner())
             .fetch_optional(&self.pool)
             .await

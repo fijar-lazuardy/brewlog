@@ -1,5 +1,5 @@
 [tools]
-rust = { version = "1.93", components = "rustfmt,clippy,rust-analyzer,rust-src" }
+rust = { version = "1.94", components = "rustfmt,clippy,rust-analyzer,rust-src" }
 node = "latest"
 uv = "latest"
 prek = "latest"

@@ -233,7 +233,10 @@ async fn checkin_with_new_cafe_and_scanned_roast() {
         .unwrap();
     prompt_input.send_keys(Key::Enter).await.unwrap();
 
-    // Wait for scan to complete — step 3 becomes visible with the submit button
+    // Wait for scan to complete and populate the review before submitting.
+    wait_for_text(&session.driver, "body", "Kiandu AA")
+        .await
+        .unwrap();
     let submit_btn = wait_for_visible(&session.driver, "button[type='submit']")
         .await
         .unwrap();
