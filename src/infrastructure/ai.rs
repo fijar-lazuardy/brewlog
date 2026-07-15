@@ -8,7 +8,9 @@ pub const OPENROUTER_URL: &str = "https://openrouter.ai/api/v1/chat/completions"
 const USER_AGENT: &str = "Brewlog/1.0";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(90);
 
-const ROASTER_PROMPT: &str = r#"Extract coffee roaster information from this input. Use web search to look up any details you cannot determine from the input alone (e.g. the roaster's website, location, or background). Return a JSON object with these fields (only include fields you can identify with confidence):
+const ROASTER_PROMPT: &str = r#"Resolve the input as a coffee roaster lookup, then extract information about the roaster. The input may be only a short or ambiguous brand name (for example, "Prolog"). Always use web search to identify the coffee-roasting business that best matches the input and verify its details, preferring the roaster's official website. Use coffee-specific context to disambiguate it from unrelated businesses or meanings. If no coffee roaster can be identified with confidence, return an empty JSON object.
+
+Return a JSON object with these fields (only include fields you can identify with confidence):
 - "name": the roaster's name
 - "country": the country the roaster is based in
 - "city": the city the roaster is based in
@@ -16,7 +18,9 @@ const ROASTER_PROMPT: &str = r#"Extract coffee roaster information from this inp
 
 Return ONLY the JSON object, no other text."#;
 
-const ROAST_PROMPT: &str = r#"Extract coffee roast information from this input. Use web search to look up any details you cannot determine from the input alone (e.g. origin, region, producer, processing method, tasting notes). Return a JSON object with these fields (only include fields you can identify with confidence):
+const ROAST_PROMPT: &str = r#"Resolve the input as a coffee roaster or specific coffee lookup, then extract information about the coffee. The input may contain only a short or ambiguous product or roaster name. Always use web search to identify the coffee product that best matches the input and verify its details, preferring the roaster's official product page. Use coffee-specific context to disambiguate it from unrelated products or meanings. If no specific coffee can be identified with confidence, return an empty JSON object.
+
+Return a JSON object with these fields (only include fields you can identify with confidence):
 - "roaster_name": the name of the roaster
 - "name": the name of this specific coffee/roast
 - "origin": the country (or countries, comma-separated) of origin of the coffee beans (e.g. "Ethiopia" or "Ethiopia, Colombia")
@@ -27,7 +31,9 @@ const ROAST_PROMPT: &str = r#"Extract coffee roast information from this input. 
 
 Return ONLY the JSON object, no other text."#;
 
-const SCAN_PROMPT: &str = r#"Extract both the coffee roaster and the roast information from this input. Use web search to look up any details you cannot determine from the input alone (e.g. the roaster's website, location, tasting notes, processing method). Return a JSON object with two top-level keys:
+const SCAN_PROMPT: &str = r#"Resolve the input as a coffee bag lookup, then extract both the roaster and coffee information. The input may be an image, a short name, or incomplete bag text. Always use web search to identify and verify the best coffee-specific match, preferring the roaster's official website or product page. Use visible bag details and coffee-specific context to disambiguate it from unrelated products or meanings. If no coffee product can be identified with confidence, return empty "roaster" and "roast" objects.
+
+Return a JSON object with two top-level keys:
 
 {
   "roaster": {
@@ -186,6 +192,9 @@ async fn call_openrouter(
             role: "user".to_string(),
             content: content_parts,
         }],
+        tools: vec![ServerTool {
+            tool_type: "openrouter:web_search",
+        }],
     };
 
     let response = client
@@ -216,20 +225,29 @@ async fn call_openrouter(
     let chat_response: ChatResponse = serde_json::from_str(&body)
         .map_err(|e| AppError::unexpected(format!("Failed to parse OpenRouter response: {e}")))?;
 
-    let content = chat_response
-        .choices
+    response_content(chat_response)
+}
+
+fn response_content(response: ChatResponse) -> Result<(String, Option<Usage>), AppError> {
+    let ChatResponse { choices, usage } = response;
+    let choice = choices
         .into_iter()
         .next()
-        .map(|c| c.message.content)
-        .unwrap_or_default();
+        .ok_or_else(|| AppError::unexpected("OpenRouter returned no choices"))?;
 
-    if content.trim().is_empty() {
-        return Err(AppError::unexpected(
-            "OpenRouter returned an empty response".to_string(),
-        ));
-    }
+    let content = choice
+        .message
+        .content
+        .filter(|content| !content.trim().is_empty())
+        .ok_or_else(|| {
+            AppError::unexpected(format!(
+                "OpenRouter returned no content (finish_reason={}, native_finish_reason={})",
+                choice.finish_reason.as_deref().unwrap_or("unknown"),
+                choice.native_finish_reason.as_deref().unwrap_or("unknown")
+            ))
+        })?;
 
-    Ok((content, chat_response.usage))
+    Ok((content, usage))
 }
 
 /// Extract a JSON object from a model response that may contain markdown
@@ -265,6 +283,13 @@ fn extract_json(raw: &str) -> &str {
 struct ChatRequest {
     model: String,
     messages: Vec<Message>,
+    tools: Vec<ServerTool>,
+}
+
+#[derive(Debug, Serialize)]
+struct ServerTool {
+    #[serde(rename = "type")]
+    tool_type: &'static str,
 }
 
 #[derive(Debug, Serialize)]
@@ -296,11 +321,13 @@ struct ChatResponse {
 #[derive(Debug, Deserialize)]
 struct Choice {
     message: ResponseMessage,
+    finish_reason: Option<String>,
+    native_finish_reason: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct ResponseMessage {
-    content: String,
+    content: Option<String>,
 }
 
 #[cfg(test)]
@@ -333,7 +360,7 @@ mod tests {
         let response: ChatResponse = serde_json::from_str(json).unwrap();
         assert_eq!(response.choices.len(), 1);
 
-        let content = &response.choices[0].message.content;
+        let content = response.choices[0].message.content.as_deref().unwrap();
         let roaster: ExtractedRoaster = serde_json::from_str(content).unwrap();
         assert_eq!(roaster.name.as_deref(), Some("Square Mile"));
         assert_eq!(roaster.country.as_deref(), Some("United Kingdom"));
@@ -366,6 +393,27 @@ mod tests {
 
         let response: ChatResponse = serde_json::from_str(json).unwrap();
         assert!(response.usage.is_none());
+    }
+
+    #[test]
+    fn report_finish_reasons_when_response_content_is_null() {
+        let json = r#"{
+            "choices": [{
+                "message": { "role": "assistant", "content": null },
+                "finish_reason": "error",
+                "native_finish_reason": "MALFORMED_FUNCTION_CALL"
+            }]
+        }"#;
+
+        let response: ChatResponse = serde_json::from_str(json).unwrap();
+        let error = response_content(response).unwrap_err();
+
+        assert!(error.to_string().contains("finish_reason=error"));
+        assert!(
+            error
+                .to_string()
+                .contains("native_finish_reason=MALFORMED_FUNCTION_CALL")
+        );
     }
 
     #[test]
@@ -419,12 +467,16 @@ mod tests {
                     },
                 ],
             }],
+            tools: vec![ServerTool {
+                tool_type: "openrouter:web_search",
+            }],
         };
 
         let json = serde_json::to_value(&request).unwrap();
         assert_eq!(json["model"], "test-model");
         assert_eq!(json["messages"][0]["content"][0]["type"], "text");
         assert_eq!(json["messages"][0]["content"][1]["type"], "image_url");
+        assert_eq!(json["tools"][0]["type"], "openrouter:web_search");
     }
 
     #[test]
